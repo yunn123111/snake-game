@@ -13,6 +13,7 @@
             background-color: #282c34;
             color: #ffffff;
             font-family: Arial, sans-serif;
+            margin: 0;
         }
         canvas {
             border: 2px solid #ffffff;
@@ -21,24 +22,29 @@
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <canvas id="gameCanvas" width="400" height="400" tabindex="0"></canvas>
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const boxSize = 20;
-
-        let snake = [{ x: 200, y: 200 }];
         let direction = "RIGHT";
+
+        // 初始化蛇的身体和食物位置
+        let snake = [{ x: 200, y: 200 }];
         let food = {
             x: Math.floor(Math.random() * (canvas.width / boxSize)) * boxSize,
-            y: Math.floor(Math.random() * (canvas.height / boxSize)) * boxSize,
+            y: Math.floor(Math.random() * (canvas.height / boxSize)) * boxSize
         };
         let score = 0;
+
+        // 自动为 canvas 元素获取焦点
+        canvas.setAttribute("tabindex", "0");
+        canvas.focus();
 
         // 绘制蛇
         function drawSnake() {
             ctx.fillStyle = "lime";
-            snake.forEach((segment) => {
+            snake.forEach(segment => {
                 ctx.fillRect(segment.x, segment.y, boxSize, boxSize);
                 ctx.strokeStyle = "black";
                 ctx.strokeRect(segment.x, segment.y, boxSize, boxSize);
@@ -51,10 +57,18 @@
             ctx.fillRect(food.x, food.y, boxSize, boxSize);
         }
 
+        // 显示得分
+        function showScore() {
+            ctx.fillStyle = "white";
+            ctx.font = "20px Arial";
+            ctx.fillText("得分: " + score, 10, 20);
+        }
+
         // 更新蛇的位置
         function updateSnake() {
             const head = { x: snake[0].x, y: snake[0].y };
 
+            // 更新蛇头位置
             if (direction === "LEFT") head.x -= boxSize;
             if (direction === "RIGHT") head.x += boxSize;
             if (direction === "UP") head.y -= boxSize;
@@ -67,17 +81,17 @@
                 score++;
                 food = {
                     x: Math.floor(Math.random() * (canvas.width / boxSize)) * boxSize,
-                    y: Math.floor(Math.random() * (canvas.height / boxSize)) * boxSize,
+                    y: Math.floor(Math.random() * (canvas.height / boxSize)) * boxSize
                 };
             } else {
                 snake.pop();
             }
         }
 
-        // 检查游戏是否结束
+        // 检查游戏结束条件
         function checkGameOver() {
             const head = snake[0];
-            // 撞到边界
+            // 撞到墙
             if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
                 return true;
             }
@@ -90,20 +104,25 @@
             return false;
         }
 
-        // 更新游戏
-        function updateGame() {
+        // 游戏循环
+        function gameLoop() {
             if (checkGameOver()) {
                 alert("游戏结束！得分: " + score);
                 document.location.reload();
+                return;
             }
+            
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawFood();
             updateSnake();
             drawSnake();
-            document.getElementById("score").textContent = score;
+            showScore();
         }
 
-        // 监听键盘事件
+        // 设置游戏主循环
+        setInterval(gameLoop, 100);
+
+        // 键盘控制蛇的方向
         document.addEventListener("keydown", (event) => {
             if (event.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
             if (event.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
@@ -111,8 +130,10 @@
             if (event.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
         });
 
-        // 游戏主循环
-        setInterval(updateGame, 100);
+        // 点击 canvas 时重新获取焦点
+        canvas.addEventListener("click", () => {
+            canvas.focus();
+        });
     </script>
 </body>
 </html>
