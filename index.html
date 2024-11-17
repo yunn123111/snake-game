@@ -14,22 +14,35 @@
             color: #ffffff;
             font-family: Arial, sans-serif;
             margin: 0;
+            flex-direction: column;
         }
         canvas {
             border: 2px solid #ffffff;
             background-color: #000000;
         }
+        #restartButton {
+            margin-top: 20px;
+            display: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #50c878;
+            border: none;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas" width="400" height="400" tabindex="0"></canvas>
+    <button id="restartButton" onclick="restartGame()">重新开始</button>
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
+        const restartButton = document.getElementById("restartButton");
         const boxSize = 20;
         let direction = "RIGHT";
+        let gameOver = false;
 
-        // 初始化蛇的身体和食物位置
         let snake = [{ x: 200, y: 200 }];
         let food = {
             x: Math.floor(Math.random() * (canvas.width / boxSize)) * boxSize,
@@ -37,11 +50,9 @@
         };
         let score = 0;
 
-        // 自动为 canvas 元素获取焦点
         canvas.setAttribute("tabindex", "0");
         canvas.focus();
 
-        // 绘制蛇
         function drawSnake() {
             ctx.fillStyle = "lime";
             snake.forEach(segment => {
@@ -51,24 +62,20 @@
             });
         }
 
-        // 绘制食物
         function drawFood() {
             ctx.fillStyle = "red";
             ctx.fillRect(food.x, food.y, boxSize, boxSize);
         }
 
-        // 显示得分
         function showScore() {
             ctx.fillStyle = "white";
             ctx.font = "20px Arial";
             ctx.fillText("得分: " + score, 10, 20);
         }
 
-        // 更新蛇的位置
         function updateSnake() {
             const head = { x: snake[0].x, y: snake[0].y };
 
-            // 更新蛇头位置
             if (direction === "LEFT") head.x -= boxSize;
             if (direction === "RIGHT") head.x += boxSize;
             if (direction === "UP") head.y -= boxSize;
@@ -76,7 +83,6 @@
 
             snake.unshift(head);
 
-            // 检查是否吃到食物
             if (head.x === food.x && head.y === food.y) {
                 score++;
                 food = {
@@ -88,30 +94,24 @@
             }
         }
 
-        // 检查游戏结束条件
         function checkGameOver() {
             const head = snake[0];
-            // 撞到墙
-            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
-                return true;
-            }
-            // 撞到自己
+            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) return true;
             for (let i = 1; i < snake.length; i++) {
-                if (head.x === snake[i].x && head.y === snake[i].y) {
-                    return true;
-                }
+                if (head.x === snake[i].x && head.y === snake[i].y) return true;
             }
             return false;
         }
 
-        // 游戏循环
         function gameLoop() {
+            if (gameOver) return;
+
             if (checkGameOver()) {
-                alert("游戏结束！得分: " + score);
-                document.location.reload();
+                gameOver = true;
+                showGameOver();
                 return;
             }
-            
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawFood();
             updateSnake();
@@ -119,18 +119,37 @@
             showScore();
         }
 
-        // 设置游戏主循环
+        function showGameOver() {
+            ctx.fillStyle = "red";
+            ctx.font = "30px Arial";
+            ctx.fillText("游戏结束！按 R 重新开始", 50, 200);
+            restartButton.style.display = "block";
+        }
+
+        function restartGame() {
+            gameOver = false;
+            score = 0;
+            snake = [{ x: 200, y: 200 }];
+            direction = "RIGHT";
+            food = {
+                x: Math.floor(Math.random() * (canvas.width / boxSize)) * boxSize,
+                y: Math.floor(Math.random() * (canvas.height / boxSize)) * boxSize
+            };
+            restartButton.style.display = "none";
+        }
+
         setInterval(gameLoop, 100);
 
-        // 键盘控制蛇的方向
         document.addEventListener("keydown", (event) => {
             if (event.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
             if (event.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
             if (event.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
             if (event.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
+            
+            // 按 R 重新开始游戏
+            if (event.key === "r" && gameOver) restartGame();
         });
 
-        // 点击 canvas 时重新获取焦点
         canvas.addEventListener("click", () => {
             canvas.focus();
         });
