@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>贪吃蛇游戏</title>
     <style>
         body {
@@ -40,20 +40,15 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const restartButton = document.getElementById("restartButton");
-        const boxSize = 20;
+        let boxSize = 20;
         let direction = "RIGHT";
         let gameOver = false;
         let gameInterval;
-
-        // 适配移动设备屏幕
-        function adjustCanvasSize() {
-            const width = window.innerWidth > 400 ? 400 : window.innerWidth - 20;
-            const height = window.innerHeight > 400 ? 400 : window.innerHeight - 100;
-            canvas.width = width;
-            canvas.height = height;
-        }
-        adjustCanvasSize();
-        window.addEventListener('resize', adjustCanvasSize);
+        let width = window.innerWidth > 400 ? 400 : window.innerWidth - 20;
+        let height = window.innerHeight > 400 ? 400 : window.innerHeight - 100;
+        canvas.width = width;
+        canvas.height = height;
+        boxSize = Math.floor(canvas.width / 20);
 
         let snake = [{ x: boxSize * 2, y: boxSize * 2 }];
         let food = {
@@ -150,7 +145,6 @@
             gameInterval = setInterval(gameLoop, 100);
         }
 
-        // 改进的触摸控制
         let startX, startY;
 
         canvas.addEventListener("touchstart", (e) => {
@@ -159,20 +153,18 @@
             startY = touch.clientY;
         });
 
-        canvas.addEventListener("touchend", (e) => {
-            const touch = e.changedTouches[0];
-            const endX = touch.clientX;
-            const endY = touch.clientY;
-
-            const diffX = endX - startX;
-            const diffY = endY - startY;
+        canvas.addEventListener("touchmove", (e) => {
+            if (gameOver) return;
+            const touch = e.touches[0];
+            const diffX = touch.clientX - startX;
+            const diffY = touch.clientY - startY;
 
             if (Math.abs(diffX) > Math.abs(diffY)) {
-                if (diffX > 0 && direction !== "LEFT") direction = "RIGHT";
-                else if (diffX < 0 && direction !== "RIGHT") direction = "LEFT";
+                if (diffX > 20 && direction !== "LEFT") direction = "RIGHT";
+                if (diffX < -20 && direction !== "RIGHT") direction = "LEFT";
             } else {
-                if (diffY > 0 && direction !== "UP") direction = "DOWN";
-                else if (diffY < 0 && direction !== "DOWN") direction = "UP";
+                if (diffY > 20 && direction !== "UP") direction = "DOWN";
+                if (diffY < -20 && direction !== "DOWN") direction = "UP";
             }
         });
 
