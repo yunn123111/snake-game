@@ -1,10 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>贪吃蛇游戏</title>
     <style>
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
         body {
             display: flex;
             justify-content: center;
@@ -15,12 +21,17 @@
             font-family: Arial, sans-serif;
             margin: 0;
             flex-direction: column;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
         }
+        
         canvas {
             border: 2px solid #ffffff;
             background-color: #000000;
-            touch-action: none; /* 禁止默认的触摸滚动 */
+            touch-action: none;
         }
+        
         #restartButton {
             margin-top: 20px;
             display: none;
@@ -30,28 +41,71 @@
             background-color: #50c878;
             border: none;
             border-radius: 5px;
+            color: white;
+        }
+        
+        #score {
+            margin-top: 10px;
+            font-size: 20px;
+        }
+
+        #controls {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-template-rows: repeat(3, 60px);
+            gap: 5px;
+        }
+
+        .control-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-size: 24px;
+            touch-action: none;
+        }
+
+        .control-btn:active {
+            background-color: rgba(255, 255, 255, 0.4);
         }
     </style>
 </head>
 <body>
     <canvas id="gameCanvas"></canvas>
+    <div id="score">得分: 0</div>
     <button id="restartButton" onclick="restartGame()">重新开始</button>
+    <div id="controls">
+        <div></div>
+        <button class="control-btn" id="upBtn">↑</button>
+        <div></div>
+        <button class="control-btn" id="leftBtn">←</button>
+        <div></div>
+        <button class="control-btn" id="rightBtn">→</button>
+        <div></div>
+        <button class="control-btn" id="downBtn">↓</button>
+        <div></div>
+    </div>
+    
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const restartButton = document.getElementById("restartButton");
+        const scoreDisplay = document.getElementById("score");
         let boxSize = 20;
         let direction = "RIGHT";
         let gameOver = false;
         let gameInterval;
+        let score = 0;
         
         function adjustCanvasSize() {
-            const width = Math.min(window.innerWidth, 400);
-            const height = Math.min(window.innerHeight, 400);
-            canvas.width = width;
-            canvas.height = height;
+            const maxWidth = Math.min(window.innerWidth - 40, 400);
+            const maxHeight = Math.min(window.innerHeight - 200, 400);
+            canvas.width = Math.floor(maxWidth / 20) * 20;
+            canvas.height = Math.floor(maxHeight / 20) * 20;
             boxSize = Math.floor(canvas.width / 20);
         }
+        
         adjustCanvasSize();
         window.addEventListener('resize', adjustCanvasSize);
 
@@ -60,7 +114,6 @@
             x: Math.floor(Math.random() * (canvas.width / boxSize)) * boxSize,
             y: Math.floor(Math.random() * (canvas.height / boxSize)) * boxSize
         };
-        let score = 0;
 
         function drawSnake() {
             ctx.fillStyle = "lime";
@@ -76,6 +129,21 @@
             ctx.fillRect(food.x, food.y, boxSize, boxSize);
         }
 
+        function checkGameOver() {
+            const head = snake[0];
+            // 检查是否撞墙
+            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) {
+                return true;
+            }
+            // 检查是否撞到自己
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         function updateSnake() {
             const head = { x: snake[0].x, y: snake[0].y };
             if (direction === "LEFT") head.x -= boxSize;
@@ -86,6 +154,7 @@
 
             if (head.x === food.x && head.y === food.y) {
                 score++;
+                scoreDisplay.textContent = `得分: ${score}`;
                 food = {
                     x: Math.floor(Math.random() * (canvas.width / boxSize)) * boxSize,
                     y: Math.floor(Math.random() * (canvas.height / boxSize)) * boxSize
@@ -118,6 +187,7 @@
         function restartGame() {
             gameOver = false;
             score = 0;
+            scoreDisplay.textContent = `得分: ${score}`;
             snake = [{ x: boxSize * 2, y: boxSize * 2 }];
             direction = "RIGHT";
             food = {
@@ -129,28 +199,43 @@
             gameInterval = setInterval(gameLoop, 100);
         }
 
-        // 触摸控制
-        let startX, startY;
-        canvas.addEventListener("touchstart", (e) => {
+        // 按钮控制
+        document.getElementById("upBtn").addEventListener("touchstart", (e) => {
             e.preventDefault();
-            const touch = e.touches[0];
-            startX = touch.clientX;
-            startY = touch.clientY;
+            if (direction !== "DOWN") direction = "UP";
+        });
+        
+        document.getElementById("downBtn").addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            if (direction !== "UP") direction = "DOWN";
+        });
+        
+        document.getElementById("leftBtn").addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            if (direction !== "RIGHT") direction = "LEFT";
+        });
+        
+        document.getElementById("rightBtn").addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            if (direction !== "LEFT") direction = "RIGHT";
         });
 
-        canvas.addEventListener("touchmove", (e) => {
-            e.preventDefault();
+        // 键盘控制 (用于桌面端)
+        document.addEventListener("keydown", (e) => {
             if (gameOver) return;
-            const touch = e.touches[0];
-            const diffX = touch.clientX - startX;
-            const diffY = touch.clientY - startY;
-
-            if (Math.abs(diffX) > Math.abs(diffY)) {
-                if (diffX > 10 && direction !== "LEFT") direction = "RIGHT";
-                if (diffX < -10 && direction !== "RIGHT") direction = "LEFT";
-            } else {
-                if (diffY > 10 && direction !== "UP") direction = "DOWN";
-                if (diffY < -10 && direction !== "DOWN") direction = "UP";
+            switch(e.key) {
+                case "ArrowUp":
+                    if (direction !== "DOWN") direction = "UP";
+                    break;
+                case "ArrowDown":
+                    if (direction !== "UP") direction = "DOWN";
+                    break;
+                case "ArrowLeft":
+                    if (direction !== "RIGHT") direction = "LEFT";
+                    break;
+                case "ArrowRight":
+                    if (direction !== "LEFT") direction = "RIGHT";
+                    break;
             }
         });
 
