@@ -44,11 +44,16 @@
         let direction = "RIGHT";
         let gameOver = false;
         let gameInterval;
-        let width = window.innerWidth > 400 ? 400 : window.innerWidth - 20;
-        let height = window.innerHeight > 400 ? 400 : window.innerHeight - 100;
-        canvas.width = width;
-        canvas.height = height;
-        boxSize = Math.floor(canvas.width / 20);
+        
+        function adjustCanvasSize() {
+            const width = Math.min(window.innerWidth, 400);
+            const height = Math.min(window.innerHeight, 400);
+            canvas.width = width;
+            canvas.height = height;
+            boxSize = Math.floor(canvas.width / 20);
+        }
+        adjustCanvasSize();
+        window.addEventListener('resize', adjustCanvasSize);
 
         let snake = [{ x: boxSize * 2, y: boxSize * 2 }];
         let food = {
@@ -71,20 +76,12 @@
             ctx.fillRect(food.x, food.y, boxSize, boxSize);
         }
 
-        function showScore() {
-            ctx.fillStyle = "white";
-            ctx.font = "20px Arial";
-            ctx.fillText("得分: " + score, 10, 20);
-        }
-
         function updateSnake() {
             const head = { x: snake[0].x, y: snake[0].y };
-
             if (direction === "LEFT") head.x -= boxSize;
             if (direction === "RIGHT") head.x += boxSize;
             if (direction === "UP") head.y -= boxSize;
             if (direction === "DOWN") head.y += boxSize;
-
             snake.unshift(head);
 
             if (head.x === food.x && head.y === food.y) {
@@ -98,35 +95,22 @@
             }
         }
 
-        function checkGameOver() {
-            const head = snake[0];
-            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) return true;
-            for (let i = 1; i < snake.length; i++) {
-                if (head.x === snake[i].x && head.y === snake[i].y) return true;
-            }
-            return false;
-        }
-
         function gameLoop() {
-            if (gameOver) return;
-
             if (checkGameOver()) {
                 gameOver = true;
                 clearInterval(gameInterval);
                 showGameOver();
                 return;
             }
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawFood();
             updateSnake();
             drawSnake();
-            showScore();
         }
 
         function showGameOver() {
             ctx.fillStyle = "red";
-            ctx.font = "30px Arial";
+            ctx.font = "20px Arial";
             ctx.fillText("游戏结束！", canvas.width / 4, canvas.height / 2);
             restartButton.style.display = "block";
         }
@@ -145,26 +129,28 @@
             gameInterval = setInterval(gameLoop, 100);
         }
 
+        // 触摸控制
         let startX, startY;
-
         canvas.addEventListener("touchstart", (e) => {
+            e.preventDefault();
             const touch = e.touches[0];
             startX = touch.clientX;
             startY = touch.clientY;
         });
 
         canvas.addEventListener("touchmove", (e) => {
+            e.preventDefault();
             if (gameOver) return;
             const touch = e.touches[0];
             const diffX = touch.clientX - startX;
             const diffY = touch.clientY - startY;
 
             if (Math.abs(diffX) > Math.abs(diffY)) {
-                if (diffX > 20 && direction !== "LEFT") direction = "RIGHT";
-                if (diffX < -20 && direction !== "RIGHT") direction = "LEFT";
+                if (diffX > 10 && direction !== "LEFT") direction = "RIGHT";
+                if (diffX < -10 && direction !== "RIGHT") direction = "LEFT";
             } else {
-                if (diffY > 20 && direction !== "UP") direction = "DOWN";
-                if (diffY < -20 && direction !== "DOWN") direction = "UP";
+                if (diffY > 10 && direction !== "UP") direction = "DOWN";
+                if (diffY < -10 && direction !== "DOWN") direction = "UP";
             }
         });
 
