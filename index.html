@@ -2,320 +2,249 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>贪吃蛇游戏</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>神秘古宅探险</title>
     <style>
-        * {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-            padding: 0;
-            margin: 0;
-            box-sizing: border-box;
-        }
-        
-        html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #282c34;
-        }
-        
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            touch-action: none;
-            position: fixed;
-        }
-        
-        #gameWrapper {
-            position: relative;
-            width: 90vw;
-            max-width: 400px;
-            aspect-ratio: 1;
-            margin: 20px auto;
-        }
-        
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: 2px solid #ffffff;
-            background-color: #000000;
-            touch-action: none;
-        }
-        
-        #restartButton {
-            margin-top: 20px;
-            display: none;
-            padding: 10px 20px;
-            font-size: 18px;
-            cursor: pointer;
-            background-color: #50c878;
-            border: none;
-            border-radius: 5px;
-            color: white;
-        }
-        
-        #score {
-            color: white;
-            font-size: 20px;
-            margin: 10px 0;
             font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+            background-color: #f0f0f0;
         }
 
-        #controls {
-            width: 90vw;
-            max-width: 300px;
-            margin-top: 20px;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            gap: 10px;
-            aspect-ratio: 1;
-        }
-
-        .control-btn {
-            background-color: rgba(255, 255, 255, 0.2);
-            border: none;
+        #game-container {
+            background-color: white;
+            padding: 20px;
             border-radius: 10px;
-            color: white;
-            font-size: 24px;
-            padding: 15px;
-            touch-action: manipulation;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
-        .control-btn:active {
-            background-color: rgba(255, 255, 255, 0.4);
+        #story-text {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            min-height: 100px;
+        }
+
+        #room-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .action-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .action-button:hover {
+            background-color: #2980b9;
+        }
+
+        #actions-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        #inventory {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #eef2f7;
+            border-radius: 5px;
+        }
+
+        #inventory h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                margin: 10px;
+                padding: 0 10px;
+            }
+
+            .action-button {
+                width: 100%;
+                margin: 5px 0;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="gameWrapper">
-        <canvas id="gameCanvas"></canvas>
+    <div id="game-container">
+        <div id="room-name"></div>
+        <div id="story-text"></div>
+        <div id="actions-container"></div>
+        <div id="inventory">
+            <h3>物品栏</h3>
+            <div id="inventory-items"></div>
+        </div>
     </div>
-    <div id="score">得分: 0</div>
-    <button id="restartButton">重新开始</button>
-    <div id="controls">
-        <div></div>
-        <button class="control-btn" id="upBtn">↑</button>
-        <div></div>
-        <button class="control-btn" id="leftBtn">←</button>
-        <div></div>
-        <button class="control-btn" id="rightBtn">→</button>
-        <div></div>
-        <button class="control-btn" id="downBtn">↓</button>
-        <div></div>
-    </div>
-    
+
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        const wrapper = document.getElementById("gameWrapper");
-        const restartButton = document.getElementById("restartButton");
-        const scoreDisplay = document.getElementById("score");
-        
-        let pixelRatio = window.devicePixelRatio || 1;
-        let boxSize = 20;
-        let direction = "RIGHT";
-        let nextDirection = "RIGHT";
-        let gameOver = false;
-        let gameInterval;
-        let score = 0;
-        
-        function initCanvas() {
-            // 设置画布的实际大小
-            const rect = wrapper.getBoundingClientRect();
-            canvas.width = rect.width * pixelRatio;
-            canvas.height = rect.height * pixelRatio;
-            
-            // 调整绘图上下文的比例
-            ctx.scale(pixelRatio, pixelRatio);
-            
-            // 设置画布的CSS大小
-            canvas.style.width = rect.width + 'px';
-            canvas.style.height = rect.height + 'px';
-            
-            // 计算方格大小
-            boxSize = Math.floor(rect.width / 20);
+        class Room {
+            constructor(name, description) {
+                this.name = name;
+                this.description = description;
+                this.linkedRooms = {};
+                this.items = [];
+            }
         }
 
-        // 初始化游戏状态
-        function initGame() {
-            initCanvas();
-            snake = [
-                { x: boxSize * 2, y: boxSize * 2 },
-                { x: boxSize, y: boxSize * 2 },
-                { x: 0, y: boxSize * 2 }
-            ];
-            food = getNewFoodPosition();
-            direction = "RIGHT";
-            nextDirection = "RIGHT";
-            score = 0;
-            scoreDisplay.textContent = `得分: ${score}`;
+        class Item {
+            constructor(name, description, canTake = true) {
+                this.name = name;
+                this.description = description;
+                this.canTake = canTake;
+            }
         }
 
-        function getNewFoodPosition() {
-            const gridWidth = Math.floor(canvas.width / pixelRatio / boxSize);
-            const gridHeight = Math.floor(canvas.height / pixelRatio / boxSize);
-            let newFood;
-            do {
-                newFood = {
-                    x: Math.floor(Math.random() * gridWidth) * boxSize,
-                    y: Math.floor(Math.random() * gridHeight) * boxSize
+        class Game {
+            constructor() {
+                this.currentRoom = null;
+                this.inventory = [];
+                this.rooms = {};
+                this.setupGame();
+                this.updateDisplay();
+            }
+
+            setupGame() {
+                // 创建房间
+                const entrance = new Room(
+                    "神秘入口",
+                    "你站在一个古老的入口前，周围藤蔓缠绕。一个生锈的铁门紧闭着。"
+                );
+                
+                const hall = new Room(
+                    "大厅",
+                    "宽敞的大厅里回荡着你的脚步声，墙上挂着几幅老旧的画像。"
+                );
+                
+                const study = new Room(
+                    "书房",
+                    "书架上摆满了布满灰尘的古书，一张老旧的木桌上放着一盏台灯。"
+                );
+                
+                const secretRoom = new Room(
+                    "密室",
+                    "一个隐藏的房间，看起来很久没人来过了。墙上挂着一幅巨大的地图。"
+                );
+
+                // 设置房间连接
+                entrance.linkedRooms = { "前进": hall };
+                hall.linkedRooms = {
+                    "后退": entrance,
+                    "左转": study
                 };
-            } while (snake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
-            return newFood;
-        }
+                study.linkedRooms = { "返回": hall };
 
-        function drawSnake() {
-            ctx.fillStyle = "lime";
-            snake.forEach((segment, index) => {
-                ctx.fillRect(segment.x, segment.y, boxSize - 1, boxSize - 1);
-                if (index === 0) {
-                    // 蛇头用深色标记
-                    ctx.fillStyle = "#008800";
+                // 添加物品
+                entrance.items.push(
+                    new Item("铁门", "这扇门已经生锈，但似乎能打开。", false),
+                    new Item("钥匙", "一把生锈的铁钥匙，也许能打开什么。")
+                );
+                
+                hall.items.push(
+                    new Item("画像", "一幅诡异的肖像画，画中人物的眼睛似乎在跟着你移动。", false)
+                );
+                
+                study.items.push(
+                    new Item("日记", "一本破旧的日记本，记录着这里的秘密。")
+                );
+
+                // 保存所有房间
+                this.rooms = { entrance, hall, study, secretRoom };
+                this.currentRoom = entrance;
+            }
+
+            updateDisplay() {
+                // 更新房间名称
+                document.getElementById('room-name').textContent = this.currentRoom.name;
+                
+                // 更新描述文本
+                document.getElementById('story-text').textContent = this.currentRoom.description;
+                
+                // 更新可用动作
+                const actionsContainer = document.getElementById('actions-container');
+                actionsContainer.innerHTML = '';
+
+                // 添加移动按钮
+                for (const [direction, room] of Object.entries(this.currentRoom.linkedRooms)) {
+                    const button = this.createButton(direction, () => {
+                        this.currentRoom = room;
+                        this.updateDisplay();
+                    });
+                    actionsContainer.appendChild(button);
                 }
-            });
-        }
 
-        function drawFood() {
-            ctx.fillStyle = "red";
-            ctx.fillRect(food.x, food.y, boxSize - 1, boxSize - 1);
-        }
+                // 添加物品相关按钮
+                for (const item of this.currentRoom.items) {
+                    const lookButton = this.createButton(`查看${item.name}`, () => {
+                        alert(item.description);
+                    });
+                    actionsContainer.appendChild(lookButton);
 
-        function checkCollision(x, y) {
-            // 检查是否撞墙
-            if (x < 0 || x >= canvas.width / pixelRatio || y < 0 || y >= canvas.height / pixelRatio) {
-                return true;
-            }
-            // 检查是否撞到自己
-            return snake.some((segment, index) => {
-                if (index === 0) return false;
-                return segment.x === x && segment.y === y;
-            });
-        }
+                    if (item.canTake) {
+                        const takeButton = this.createButton(`拾取${item.name}`, () => {
+                            this.inventory.push(item);
+                            this.currentRoom.items = this.currentRoom.items.filter(i => i !== item);
+                            this.updateDisplay();
+                        });
+                        actionsContainer.appendChild(takeButton);
+                    }
+                }
 
-        function updateGame() {
-            direction = nextDirection;
-            const head = { x: snake[0].x, y: snake[0].y };
-            
-            switch (direction) {
-                case "LEFT": head.x -= boxSize; break;
-                case "RIGHT": head.x += boxSize; break;
-                case "UP": head.y -= boxSize; break;
-                case "DOWN": head.y += boxSize; break;
-            }
-
-            if (checkCollision(head.x, head.y)) {
-                gameOver = true;
-                showGameOver();
-                return;
+                // 更新物品栏
+                const inventoryContainer = document.getElementById('inventory-items');
+                inventoryContainer.innerHTML = '';
+                
+                if (this.inventory.length === 0) {
+                    inventoryContainer.textContent = '空';
+                } else {
+                    this.inventory.forEach(item => {
+                        const useButton = this.createButton(`使用${item.name}`, () => {
+                            this.useItem(item);
+                        });
+                        inventoryContainer.appendChild(useButton);
+                    });
+                }
             }
 
-            snake.unshift(head);
+            createButton(text, onClick) {
+                const button = document.createElement('button');
+                button.textContent = text;
+                button.className = 'action-button';
+                button.onclick = onClick;
+                return button;
+            }
 
-            if (head.x === food.x && head.y === food.y) {
-                score += 10;
-                scoreDisplay.textContent = `得分: ${score}`;
-                food = getNewFoodPosition();
-            } else {
-                snake.pop();
+            useItem(item) {
+                if (item.name === "钥匙" && this.currentRoom.name === "神秘入口") {
+                    alert("你用钥匙打开了铁门，发现了一个新的通道！");
+                    this.currentRoom.linkedRooms["前进"] = this.rooms.secretRoom;
+                    this.rooms.secretRoom.linkedRooms["返回"] = this.currentRoom;
+                    this.inventory = this.inventory.filter(i => i !== item);
+                    this.updateDisplay();
+                } else {
+                    alert("这个物品现在没有特别的用处。");
+                }
             }
         }
 
-        function gameLoop() {
-            if (gameOver) return;
-            
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            updateGame();
-            drawFood();
-            drawSnake();
-        }
-
-        function showGameOver() {
-            clearInterval(gameInterval);
-            ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-            ctx.fillRect(0, 0, canvas.width / pixelRatio, canvas.height / pixelRatio);
-            ctx.fillStyle = "red";
-            ctx.font = "20px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText("游戏结束！", canvas.width / pixelRatio / 2, canvas.height / pixelRatio / 2);
-            restartButton.style.display = "block";
-        }
-
-        function startGame() {
-            gameOver = false;
-            restartButton.style.display = "none";
-            initGame();
-            if (gameInterval) clearInterval(gameInterval);
-            gameInterval = setInterval(gameLoop, 100);
-        }
-
-        // 控制按钮事件
-        const buttons = {
-            upBtn: "UP",
-            downBtn: "DOWN",
-            leftBtn: "LEFT",
-            rightBtn: "RIGHT"
+        // 启动游戏
+        window.onload = () => {
+            new Game();
         };
-
-        Object.entries(buttons).forEach(([btnId, dir]) => {
-            const btn = document.getElementById(btnId);
-            btn.addEventListener("touchstart", (e) => {
-                e.preventDefault();
-                const opposites = {
-                    UP: "DOWN",
-                    DOWN: "UP",
-                    LEFT: "RIGHT",
-                    RIGHT: "LEFT"
-                };
-                if (direction !== opposites[dir]) {
-                    nextDirection = dir;
-                }
-            });
-        });
-
-        // 键盘控制
-        document.addEventListener("keydown", (e) => {
-            if (gameOver) return;
-            const keys = {
-                ArrowUp: "UP",
-                ArrowDown: "DOWN",
-                ArrowLeft: "LEFT",
-                ArrowRight: "RIGHT"
-            };
-            if (keys[e.key]) {
-                const opposites = {
-                    UP: "DOWN",
-                    DOWN: "UP",
-                    LEFT: "RIGHT",
-                    RIGHT: "LEFT"
-                };
-                if (direction !== opposites[keys[e.key]]) {
-                    nextDirection = keys[e.key];
-                }
-            }
-        });
-
-        // 重启按钮事件
-        restartButton.addEventListener("click", startGame);
-
-        // 处理窗口大小变化
-        let resizeTimeout;
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
-                initCanvas();
-            }, 250);
-        });
-
-        // 开始游戏
-        startGame();
     </script>
 </body>
 </html>
