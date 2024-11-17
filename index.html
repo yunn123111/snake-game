@@ -42,6 +42,7 @@
         const boxSize = 20;
         let direction = "RIGHT";
         let gameOver = false;
+        let gameInterval;
 
         let snake = [{ x: 200, y: 200 }];
         let food = {
@@ -100,59 +101,4 @@
             for (let i = 1; i < snake.length; i++) {
                 if (head.x === snake[i].x && head.y === snake[i].y) return true;
             }
-            return false;
-        }
-
-        function gameLoop() {
-            if (gameOver) return;
-
-            if (checkGameOver()) {
-                gameOver = true;
-                showGameOver();
-                return;
-            }
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawFood();
-            updateSnake();
-            drawSnake();
-            showScore();
-        }
-
-        function showGameOver() {
-            ctx.fillStyle = "red";
-            ctx.font = "30px Arial";
-            ctx.fillText("游戏结束！按 R 重新开始", 50, 200);
-            restartButton.style.display = "block";
-        }
-
-        function restartGame() {
-            gameOver = false;
-            score = 0;
-            snake = [{ x: 200, y: 200 }];
-            direction = "RIGHT";
-            food = {
-                x: Math.floor(Math.random() * (canvas.width / boxSize)) * boxSize,
-                y: Math.floor(Math.random() * (canvas.height / boxSize)) * boxSize
-            };
-            restartButton.style.display = "none";
-        }
-
-        setInterval(gameLoop, 100);
-
-        document.addEventListener("keydown", (event) => {
-            if (event.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
-            if (event.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
-            if (event.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
-            if (event.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
-            
-            // 按 R 重新开始游戏
-            if (event.key === "r" && gameOver) restartGame();
-        });
-
-        canvas.addEventListener("click", () => {
-            canvas.focus();
-        });
-    </script>
-</body>
-</html>
+            return
